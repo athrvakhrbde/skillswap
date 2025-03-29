@@ -5,6 +5,12 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Redirect rule for SPA client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
 [[headers]]
   for = "/*"
   [headers.values]

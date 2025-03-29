@@ -13,6 +13,19 @@ const nextConfig = {
   output: 'export',
   // Disable trailing slashes
   trailingSlash: false,
+  // Add custom rewrites for client-side routing
+  async rewrites() {
+    return [
+      {
+        source: '/:path*',
+        destination: '/:path*',
+      },
+      {
+        source: '/messages/:id',
+        destination: '/messages/[id]',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig; 

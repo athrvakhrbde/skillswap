@@ -12,6 +12,13 @@ import {
 import { FaSpinner, FaPaperPlane, FaArrowLeft, FaExclamationTriangle, FaUser } from 'react-icons/fa';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
+// This function is required for static site generation with dynamic routes
+export function generateStaticParams() {
+  // Return an empty array since these pages will be generated client-side
+  // For production, you would return actual conversation IDs if you knew them at build time
+  return [];
+}
+
 export default function ChatPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
   const router = useRouter();

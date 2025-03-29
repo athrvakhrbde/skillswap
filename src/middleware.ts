@@ -1,5 +1,9 @@
 // NOTE: Middleware cannot be used with "output: export" in next.config.js
-// This file is kept for reference but is not used in the current build configuration.
+// This file is disabled for the current static export build configuration.
+// Authentication is handled client-side in the ProtectedRoute component instead.
+
+// If you need server-side authentication in the future, remove the "output: export" setting
+// from next.config.js and uncomment this middleware code.
 
 /*
 import { NextResponse } from 'next/server';
