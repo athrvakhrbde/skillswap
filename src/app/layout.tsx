@@ -12,6 +12,18 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: 'SkillSwap - Trade skills, build community!',
   description: 'A peer-to-peer skill-sharing platform',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-icon.png',
+  },
+  manifest: '/manifest.json',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+  themeColor: '#0F0F19',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'SkillSwap',
+  },
 };
 
 export default function RootLayout({
