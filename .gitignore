@@ -25,9 +25,14 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.production
 
 # vercel
 .vercel
+
+# netlify
+.netlify
+netlify.toml
 
 # typescript
 *.tsbuildinfo
@@ -35,6 +40,22 @@ next-env.d.ts
 
 # IDE
 .vscode/
-.idea/ 
-# Local Netlify folder
-.netlify
+.idea/
+
+# Local development data
+*.db
+*.sqlite
+*.local.json
+
+# Logs
+logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

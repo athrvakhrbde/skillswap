@@ -1,91 +1,121 @@
 # SkillSwap
 
-SkillSwap is a modern web application that connects people who want to teach and learn from each other. Share your expertise and discover new skills in your community.
+SkillSwap is a peer-to-peer platform that connects people who want to teach and learn from each other. Share your expertise and discover new skills in your community.
 
-![SkillSwap Screenshot](screenshot.png)
+![SkillSwap Screenshot](public/og-image.png)
 
 ## Features
 
-- Create profiles to showcase skills you can teach and skills you want to learn
-- Browse through community members to find skill-sharing matches
-- Search by skills or location to find relevant skill-swap partners
-- Connect with members through direct contact
-- Modern, responsive UI with glassmorphism design
+- **Profile Creation**: Create a profile showcasing your teachable skills and what you want to learn
+- **Browse Profiles**: Find people with complementary skills in your community
+- **Real-time Chat**: Connect directly with potential skill swap partners
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
 
 ## Tech Stack
 
-- **Frontend**: Next.js, React, TypeScript
-- **Styling**: Tailwind CSS with custom glassmorphism effects
-- **State Management**: React Context and Hooks
-- **Storage**: Client-side storage with Dualite
+- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
+- **State Management**: React Hooks
+- **Data Persistence**: Local storage (development), API-ready for production integration
+- **Deployment**: Netlify Static Export
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 18.0 or higher
+- npm or yarn
 
 ### Installation
 
 1. Clone the repository
-   ```bash
-   git clone https://github.com/yourusername/skillswap.git
-   cd skillswap
-   ```
+
+```bash
+git clone https://github.com/your-username/skillswap.git
+cd skillswap
+```
 
 2. Install dependencies
-   ```bash
-   npm install
-   ```
 
-3. Run the development server
-   ```bash
-   npm run dev
-   ```
+```bash
+npm install
+# or
+yarn
+```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application
+3. Set up environment variables
 
-### Production Build
+Create a `.env.local` file in the root directory with the following variables:
 
-To create a production build:
+```
+NEXT_PUBLIC_API_URL=
+NEXT_PUBLIC_ENABLE_CHAT=true
+```
+
+4. Run the development server
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Production Deployment
+
+### Building for production
 
 ```bash
 npm run build
+# or
+yarn build
 ```
 
-To start the production server:
+### Running in production mode
 
 ```bash
-npm start
+npm run start
+# or
+yarn start
 ```
 
-## Project Structure
+### Deploying to Netlify
 
-- `/src/app` - Next.js app router pages
-- `/src/components` - React components
-- `/src/lib` - Utilities and database functionality
-- `/public` - Static assets
+This project is configured for deployment on Netlify. The `netlify.toml` file includes the necessary configuration for deployment with static export.
 
-## Deployment
+1. Push your changes to GitHub
+2. Connect your repository to Netlify
+3. Configure the build settings:
+   - Build command: `npm run build`
+   - Publish directory: `out`
 
-This application can be deployed to any platform that supports Next.js, such as Netlify or Vercel.
+## API Integration
 
-### Netlify Deployment
+The application is designed to work with a backend API. In development mode, it uses local storage as a fallback. To connect to your API:
 
-This project includes configuration for easy deployment to Netlify:
-
-1. Fork or clone this repository to your GitHub account
-2. Sign up or log in to [Netlify](https://www.netlify.com/)
-3. Click "New site from Git" and select your repository
-4. The deployment configuration is already included in `netlify.toml`
-5. Click "Deploy site"
-
-For detailed deployment instructions, see [netlify-deployment.md](netlify-deployment.md)
+1. Set the `NEXT_PUBLIC_API_URL` environment variable to your API endpoint
+2. Ensure your API implements the following endpoints:
+   - `GET /profiles` - Returns a list of all profiles
+   - `POST /profiles` - Creates a new profile
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+- [Next.js](https://nextjs.org/)
+- [React](https://reactjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [React Icons](https://react-icons.github.io/react-icons/)
+- [Cursor UI](https://cursor.com) - UI design inspiration 

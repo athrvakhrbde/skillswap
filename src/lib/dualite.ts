@@ -13,148 +13,169 @@ export interface Profile {
   contact: string;
   about?: string;
   teachingExperience?: string;
+  created?: number;
 }
 
-// Mock database for local development
+// Storage keys
 const LOCAL_STORAGE_KEY = 'skillswap_profiles';
+const LAST_SYNC_KEY = 'skillswap_last_sync';
 
-// Sample profiles for demo
-const SAMPLE_PROFILES: Profile[] = [
-  {
-    id: '1',
-    name: 'Alex',
-    teach: 'Guitar',
-    learn: 'Coding',
-    location: 'Downtown',
-    contact: 'alex@example.com',
-    about: 'Music enthusiast with 8 years of guitar playing experience. I love teaching beginners and helping them discover the joy of music.',
-    teachingExperience: 'I\'ve taught guitar to over 20 students, ranging from complete beginners to intermediate players. My specialty is acoustic fingerstyle and basic music theory.'
-  },
-  {
-    id: '2',
-    name: 'Sara',
-    teach: 'Yoga',
-    learn: 'Photography',
-    location: 'Uptown',
-    contact: 'sara@example.com',
-    about: 'Certified yoga instructor passionate about mindfulness and wellness. I believe yoga is for everybody regardless of age or fitness level.',
-    teachingExperience: 'I\'ve been teaching yoga for 5 years, with certifications in Hatha and Vinyasa. I specialize in beginner-friendly flows and alignment techniques.'
-  },
-  {
-    id: '3',
-    name: 'Mike',
-    teach: 'Baking',
-    learn: 'Spanish',
-    location: 'Midtown',
-    contact: 'mike@example.com',
-    about: 'Self-taught baker who loves creating delicious treats. From sourdough to pastries, I enjoy the science and art of baking.',
-    teachingExperience: 'I\'ve hosted multiple baking workshops focusing on bread basics and pastry techniques. I can teach you to make incredible sourdough from scratch!'
-  },
-  {
-    id: '4',
-    name: 'Priya',
-    teach: 'Spanish',
-    learn: 'Guitar',
-    location: 'West End',
-    contact: 'priya@example.com',
-    about: 'Bilingual speaker who lived in Madrid for 3 years. I love sharing Spanish language and culture through conversation practice.',
-    teachingExperience: 'I\'ve tutored Spanish for both casual learners and university students. My teaching style focuses on practical conversation skills and everyday vocabulary.'
-  },
-  {
-    id: '5',
-    name: 'Jordan',
-    teach: 'Coding',
-    learn: 'Juggling',
-    location: 'East Side',
-    contact: 'jordan@example.com',
-    about: 'Software developer with a passion for teaching others. I believe anyone can learn to code with the right guidance.',
-    teachingExperience: 'I\'ve mentored junior developers and taught coding workshops. I specialize in JavaScript, React, and web development fundamentals.'
-  }
-];
+// API URLs - to be replaced with actual backend service in production
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-// Initialize local storage with sample profiles
-const initializeLocalStorage = () => {
-  if (typeof window !== 'undefined') {
-    const existingProfiles = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!existingProfiles) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(SAMPLE_PROFILES));
-    }
+// Error handling utility
+const handleApiError = (error: any) => {
+  console.error('API Error:', error);
+  // In production, you might want to send this to an error tracking service
+  if (process.env.NODE_ENV === 'production') {
+    // Example: Send to your error tracking service
+    // errorTrackingService.captureException(error);
   }
+  return null;
 };
 
 // Create a new profile
-export const createProfile = async (profile: Profile): Promise<Profile> => {
-  // In a real implementation, this would use Dualite's API
-  // For our prototype, we'll use localStorage
-  
-  initializeLocalStorage();
-  
-  const newProfile = {
-    ...profile,
-    id: Date.now().toString(),
-  };
-  
-  const existingProfiles = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]');
-  const updatedProfiles = [...existingProfiles, newProfile];
-  
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedProfiles));
-  
-  return newProfile;
+export const createProfile = async (profile: Profile): Promise<Profile | null> => {
+  try {
+    const newProfile = {
+      ...profile,
+      id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      created: Date.now(),
+    };
+    
+    // In production, this would make an API call to your backend
+    if (API_BASE_URL) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/profiles`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newProfile),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        // Fall back to localStorage if the API call fails
+        console.warn('API call failed, falling back to localStorage', error);
+      }
+    }
+    
+    // Fallback for local development or if API is unavailable
+    const existingProfiles = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]');
+    const updatedProfiles = [...existingProfiles, newProfile];
+    
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedProfiles));
+    
+    return newProfile;
+  } catch (error) {
+    return handleApiError(error);
+  }
 };
 
 // Get all profiles
 export const getProfiles = async (): Promise<Profile[]> => {
-  // In a real implementation, this would fetch from Dualite's API
-  initializeLocalStorage();
-  
-  const profiles = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]');
-  return profiles;
+  try {
+    // In production, this would fetch from your backend API
+    if (API_BASE_URL) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/profiles`);
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        // Cache the data locally for offline access
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+        localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
+        return data;
+      } catch (error) {
+        // Fall back to localStorage if the API call fails
+        console.warn('API call failed, falling back to localStorage', error);
+      }
+    }
+    
+    // Fallback for local development or if API is unavailable
+    const profiles = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]');
+    return profiles;
+  } catch (error) {
+    console.error('Error fetching profiles:', error);
+    return [];
+  }
 };
 
-// Custom hook for profiles with real-time updates
+// Custom hook for profiles with optimized data loading
 export const useProfiles = (searchTerm: string = '') => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    let syncIntervalId: NodeJS.Timeout | null = null;
+    
     const fetchProfiles = async () => {
       try {
+        setLoading(true);
         const allProfiles = await getProfiles();
+        
+        if (!isMounted) return;
         
         // Filter profiles based on search term
         const filtered = searchTerm 
           ? allProfiles.filter(profile => 
               profile.teach.toLowerCase().includes(searchTerm.toLowerCase()) ||
               profile.learn.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              profile.name.toLowerCase().includes(searchTerm.toLowerCase())
+              profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              (profile.location && profile.location.toLowerCase().includes(searchTerm.toLowerCase()))
             )
           : allProfiles;
           
         setProfiles(filtered);
+        setError(null);
       } catch (error) {
+        if (!isMounted) return;
         console.error('Error fetching profiles:', error);
+        setError('Failed to load profiles. Please try again later.');
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchProfiles();
 
-    // Set up real-time updates with localStorage event listener
-    const handleStorageChange = () => {
-      fetchProfiles();
-    };
+    // Set up real-time updates
+    if (typeof window !== 'undefined') {
+      // Listen for local storage changes
+      const handleStorageChange = (event: StorageEvent) => {
+        if (event.key === LOCAL_STORAGE_KEY) {
+          fetchProfiles();
+        }
+      };
+      
+      window.addEventListener('storage', handleStorageChange);
+      
+      // For production, sync with the server periodically (e.g., every minute)
+      if (API_BASE_URL) {
+        syncIntervalId = setInterval(fetchProfiles, 60000);
+      }
 
-    window.addEventListener('storage', handleStorageChange);
-    
-    // For our prototype, poll for changes every 2 seconds
-    const interval = setInterval(fetchProfiles, 2000);
+      return () => {
+        isMounted = false;
+        if (syncIntervalId) clearInterval(syncIntervalId);
+        window.removeEventListener('storage', handleStorageChange);
+      };
+    }
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
+      isMounted = false;
     };
   }, [searchTerm]);
 
-  return { profiles, loading };
+  return { profiles, loading, error };
 }; 
