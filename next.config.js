@@ -9,9 +9,7 @@ const nextConfig = {
   experimental: {
     optimizeCss: false,
   },
-  // Output static files instead of using server rendering
-  // Comment this out to use serverless functions with Netlify
-  // output: 'export',
+  // Output is handled by the Netlify plugin, so don't specify output: 'export'
   
   // Environment variables
   env: {

@@ -1,11 +1,26 @@
-// NOTE: Middleware cannot be used with "output: export" in next.config.js
-// This file is disabled for the current static export build configuration.
-// Authentication is handled client-side in the ProtectedRoute component instead.
+// NOTE: This is a minimal middleware implementation for Netlify compatibility.
+// Authentication is handled client-side in the ProtectedRoute component.
+// A more comprehensive middleware can be implemented in the future if needed.
 
-// If you need server-side authentication in the future, remove the "output: export" setting
-// from next.config.js and uncomment this middleware code.
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-/*
+// Simple pass-through middleware that doesn't modify requests
+export function middleware(request: NextRequest) {
+  // Simply continue to the requested page without modifications
+  return NextResponse.next();
+}
+
+export const config = {
+  // Only apply middleware to specific routes if needed
+  matcher: [
+    // Apply to protected routes only (currently handled client-side)
+    '/profile',
+    '/messages/:path*',
+  ],
+};
+
+/* Full implementation for future reference:
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
