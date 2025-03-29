@@ -1,9 +1,11 @@
 [build]
   command = "npm run build"
   publish = ".next"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF . ':(exclude)package-lock.json'"
 
 [build.environment]
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
+  NODE_VERSION = "18"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
@@ -19,15 +21,15 @@
 [functions]
   node_bundler = "esbuild"
 
-# Handle missing resources and 404s
+# Handle resources
 [[redirects]]
   from = "/favicon.ico"
-  to = "/favicon.ico"
+  to = "/_next/static/favicon.ico"
   status = 200
 
 [[redirects]]
   from = "/manifest.json"
-  to = "/manifest.json"
+  to = "/_next/static/manifest.json"
   status = 200
 
 # Handle client-side routing

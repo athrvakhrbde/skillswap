@@ -7,7 +7,7 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
-    optimizeCss: true,
+    optimizeCss: false,
   },
   // Configure asset prefixes for production if needed
   assetPrefix: process.env.NODE_ENV === 'production' ? '/' : '',

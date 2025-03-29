@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Poppins } from 'next/font/google';
 import './globals.css';
 
@@ -9,6 +9,13 @@ const poppins = Poppins({
   variable: '--font-poppins',
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#0F0F19',
+};
+
 export const metadata: Metadata = {
   title: 'SkillSwap - Trade skills, build community!',
   description: 'A peer-to-peer skill-sharing platform',
@@ -17,8 +24,6 @@ export const metadata: Metadata = {
     apple: '/apple-icon.png',
   },
   manifest: '/manifest.json',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
-  themeColor: '#0F0F19',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
