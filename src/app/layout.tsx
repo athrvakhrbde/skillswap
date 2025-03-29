@@ -32,6 +32,63 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* Preconnect to domains for faster loading */}
+        <link rel="preconnect" href="https://firestore.googleapis.com" />
+        <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
+        <link rel="preconnect" href="https://firebase-settings.crashlytics.com" />
+        <link rel="preconnect" href="https://firebaseinstallations.googleapis.com" />
+        
+        {/* Preload critical fonts */}
+        <link 
+          rel="preload" 
+          href="/fonts/Gilroy-ExtraBold.woff2" 
+          as="font" 
+          type="font/woff2" 
+          crossOrigin="anonymous" 
+        />
+        <link 
+          rel="preload" 
+          href="/fonts/Gilroy-Bold.woff2" 
+          as="font" 
+          type="font/woff2" 
+          crossOrigin="anonymous" 
+        />
+        <link 
+          rel="preload" 
+          href="/fonts/Gilroy-Medium.woff2" 
+          as="font" 
+          type="font/woff2" 
+          crossOrigin="anonymous" 
+        />
+        
+        {/* Add font display swap for better performance */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            @font-face {
+              font-family: 'Gilroy';
+              src: url('/fonts/Gilroy-ExtraBold.woff2') format('woff2');
+              font-weight: 800;
+              font-style: normal;
+              font-display: swap;
+            }
+            @font-face {
+              font-family: 'Gilroy';
+              src: url('/fonts/Gilroy-Bold.woff2') format('woff2');
+              font-weight: 700;
+              font-style: normal;
+              font-display: swap;
+            }
+            @font-face {
+              font-family: 'Gilroy';
+              src: url('/fonts/Gilroy-Medium.woff2') format('woff2');
+              font-weight: 500;
+              font-style: normal;
+              font-display: swap;
+            }
+          `
+        }} />
+      </head>
       <body className="min-h-screen">
         <AuthProvider>
           <Navbar />

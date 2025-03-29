@@ -1,0 +1,59 @@
+// Firestore rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow anyone to read profiles
+    match /profiles/{profileId} {
+      allow read: if true;
+      // Allow writes to your own profile only
+      allow write: if request.auth != null && 
+                    request.auth.uid == profileId;
+    }
+    
+    // Conversations and messages
+    match /conversations/{conversationId} {
+      allow read: if request.auth != null && 
+                   exists(/databases/$(database)/documents/conversations/$(conversationId)/participants/$(request.auth.uid));
+      allow create: if request.auth != null &&
+                    request.resource.data.participants.hasAny([request.auth.uid]);
+      
+      // Messages in conversations
+      match /messages/{messageId} {
+        allow read: if request.auth != null && 
+                    exists(/databases/$(database)/documents/conversations/$(conversationId)/participants/$(request.auth.uid));
+        allow create: if request.auth != null && 
+                      request.resource.data.senderId == request.auth.uid &&
+                      exists(/databases/$(database)/documents/conversations/$(conversationId)/participants/$(request.auth.uid));
+      }
+      
+      // Participants subcollection 
+      match /participants/{userId} {
+        allow read, write: if request.auth != null && 
+                            (request.auth.uid == userId ||
+                             request.auth.uid == resource.data.invitedBy);
+      }
+    }
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// Storage rules
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /profiles/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+                    request.auth.uid == userId &&
+                    request.resource.size < 5 * 1024 * 1024 && // 5MB max
+                    request.resource.contentType.matches('image/.*');
+    }
+    
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+} 

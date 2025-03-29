@@ -25,7 +25,8 @@ import {
   Timestamp,
   onSnapshot,
   addDoc,
-  Firestore
+  Firestore,
+  enableIndexedDbPersistence
 } from 'firebase/firestore';
 import { Profile } from './dualite';
 
@@ -57,6 +58,23 @@ if (isBrowser && hasValidConfig) {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
     db = getFirestore(app);
     auth = getAuth(app);
+    
+    // Enable offline persistence
+    if (db) {
+      enableIndexedDbPersistence(db).catch((err) => {
+        if (err.code === 'failed-precondition') {
+          // Multiple tabs open, persistence can only be enabled
+          // in one tab at a time.
+          console.warn('Firebase persistence failed: Multiple tabs open');
+        } else if (err.code === 'unimplemented') {
+          // The current browser does not support all of the
+          // features required to enable persistence
+          console.warn('Firebase persistence not supported in this browser');
+        } else {
+          console.error('Error enabling Firebase persistence:', err);
+        }
+      });
+    }
   } catch (error) {
     console.error('Failed to initialize Firebase:', error);
   }
@@ -99,10 +117,10 @@ const isFirebaseInitialized = () => {
 
 // ============== AUTH FUNCTIONS ==============
 // Sign up
-export const signUp = async (email: string, password: string, name: string): Promise<FirebaseUser | null> => {
+export const signUp = async (email: string, password: string, name: string): Promise<{success: boolean, user: FirebaseUser | null, error?: string}> => {
   if (!isFirebaseInitialized() || !auth) {
     console.warn('Firebase not initialized or running in SSR context');
-    return null;
+    return {success: false, user: null, error: 'Firebase not initialized'};
   }
 
   try {
@@ -110,28 +128,28 @@ export const signUp = async (email: string, password: string, name: string): Pro
     // Update the user's profile with their name
     if (userCredential.user) {
       await updateProfile(userCredential.user, { displayName: name });
-      return userCredential.user as FirebaseUser;
+      return {success: true, user: userCredential.user as FirebaseUser};
     }
-    return null;
-  } catch (error) {
+    return {success: false, user: null, error: 'Failed to create user'};
+  } catch (error: any) {
     console.error('Error signing up:', error);
-    throw error;
+    return {success: false, user: null, error: error.message || 'Sign up failed'};
   }
 };
 
 // Sign in
-export const signIn = async (email: string, password: string): Promise<FirebaseUser | null> => {
+export const signIn = async (email: string, password: string): Promise<{success: boolean, user: FirebaseUser | null, error?: string}> => {
   if (!isFirebaseInitialized() || !auth) {
     console.warn('Firebase not initialized or running in SSR context');
-    return null;
+    return {success: false, user: null, error: 'Firebase not initialized'};
   }
 
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return userCredential.user as FirebaseUser;
-  } catch (error) {
+    return {success: true, user: userCredential.user as FirebaseUser};
+  } catch (error: any) {
     console.error('Error signing in:', error);
-    throw error;
+    return {success: false, user: null, error: error.message || 'Sign in failed'};
   }
 };
 

@@ -7,8 +7,8 @@ type AuthContextType = {
   user: FirebaseUser | null;
   loading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;
   clearError: () => void;
   isFirebaseAvailable: boolean;
@@ -45,39 +45,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [isFirebaseAvailable]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     if (!isFirebaseAvailable) {
       setError('Firebase is not available. Check your configuration.');
-      return;
+      return false;
     }
 
     try {
       setLoading(true);
       setError(null);
-      await signIn(email, password);
+      const result = await signIn(email, password);
+      
+      if (!result.success) {
+        setError(result.error || 'Failed to sign in');
+        return false;
+      }
+      
+      return true;
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Failed to sign in');
-      throw err;
+      return false;
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name: string): Promise<boolean> => {
     if (!isFirebaseAvailable) {
       setError('Firebase is not available. Check your configuration.');
-      return;
+      return false;
     }
 
     try {
       setLoading(true);
       setError(null);
-      await signUp(email, password, name);
+      const result = await signUp(email, password, name);
+      
+      if (!result.success) {
+        setError(result.error || 'Failed to register');
+        return false;
+      }
+      
+      return true;
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(err.message || 'Failed to register');
-      throw err;
+      return false;
     } finally {
       setLoading(false);
     }
