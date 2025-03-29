@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "export": "next export",
+    "netlify-dev": "netlify dev",
+    "netlify-deploy": "netlify deploy",
+    "netlify-deploy-prod": "netlify deploy --prod"
   },
   "dependencies": {
     "next": "^14.2.26",
@@ -14,12 +18,14 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^4.41.3",
     "@types/node": "^20.17.28",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.5",
     "autoprefixer": "^10.4.21",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.26",
+    "netlify-cli": "^19.1.4",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2"

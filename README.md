@@ -68,7 +68,19 @@ npm start
 
 ## Deployment
 
-This application can be deployed to any platform that supports Next.js, such as Vercel or Netlify.
+This application can be deployed to any platform that supports Next.js, such as Netlify or Vercel.
+
+### Netlify Deployment
+
+This project includes configuration for easy deployment to Netlify:
+
+1. Fork or clone this repository to your GitHub account
+2. Sign up or log in to [Netlify](https://www.netlify.com/)
+3. Click "New site from Git" and select your repository
+4. The deployment configuration is already included in `netlify.toml`
+5. Click "Deploy site"
+
+For detailed deployment instructions, see [netlify-deployment.md](netlify-deployment.md)
 
 ## Contributing
 
