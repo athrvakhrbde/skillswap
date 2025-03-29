@@ -26,7 +26,8 @@ import {
   onSnapshot,
   addDoc,
   Firestore,
-  enableIndexedDbPersistence
+  enableIndexedDbPersistence,
+  limit
 } from 'firebase/firestore';
 import { Profile } from './dualite';
 
@@ -56,25 +57,73 @@ const isBrowser = typeof window !== 'undefined';
 if (isBrowser && hasValidConfig) {
   try {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
-    db = getFirestore(app);
     auth = getAuth(app);
     
-    // Enable offline persistence
-    if (db) {
-      enableIndexedDbPersistence(db).catch((err) => {
-        if (err.code === 'failed-precondition') {
-          // Multiple tabs open, persistence can only be enabled
-          // in one tab at a time.
-          console.warn('Firebase persistence failed: Multiple tabs open');
-        } else if (err.code === 'unimplemented') {
-          // The current browser does not support all of the
-          // features required to enable persistence
-          console.warn('Firebase persistence not supported in this browser');
-        } else {
-          console.error('Error enabling Firebase persistence:', err);
+    // Initialize Firestore with retry mechanism
+    const initFirestore = async (retryCount = 0, maxRetries = 3) => {
+      try {
+        // Make sure app is defined before proceeding
+        if (!app) {
+          console.error('Firebase app is undefined');
+          return;
         }
-      });
-    }
+        
+        const firestore = getFirestore(app);
+        
+        // Enable offline persistence with better error handling
+        try {
+          await enableIndexedDbPersistence(firestore);
+          console.log('Firebase persistence enabled successfully');
+        } catch (err: any) {
+          if (err.code === 'failed-precondition') {
+            // Multiple tabs open, persistence can only be enabled in one tab at a time
+            console.warn('Firebase persistence failed: Multiple tabs open');
+          } else if (err.code === 'unimplemented') {
+            // The current browser does not support all of the features required to enable persistence
+            console.warn('Firebase persistence not supported in this browser');
+          } else {
+            console.error('Error enabling Firebase persistence:', err);
+          }
+        }
+        
+        // Test connection with a simple query to validate Firestore is working
+        try {
+          const testRef = collection(firestore, 'system_check');
+          await getDocs(query(testRef, limit(1)));
+          console.log('Firestore connection successful');
+        } catch (connErr) {
+          console.warn('Firestore connection test failed:', connErr);
+          
+          // If we haven't reached max retries, try again with exponential backoff
+          if (retryCount < maxRetries) {
+            const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s, etc.
+            console.log(`Retrying Firestore connection in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+            
+            setTimeout(() => {
+              initFirestore(retryCount + 1, maxRetries);
+            }, delay);
+            
+            return;
+          }
+        }
+        
+        // If we got here, assign db
+        db = firestore;
+      } catch (error) {
+        console.error('Failed to initialize Firestore:', error);
+        if (retryCount < maxRetries) {
+          const delay = Math.pow(2, retryCount) * 1000;
+          console.log(`Retrying Firestore initialization in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+          
+          setTimeout(() => {
+            initFirestore(retryCount + 1, maxRetries);
+          }, delay);
+        }
+      }
+    };
+    
+    // Start the initialization process
+    initFirestore();
   } catch (error) {
     console.error('Failed to initialize Firebase:', error);
   }

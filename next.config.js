@@ -21,42 +21,8 @@ const nextConfig = {
   // Disable trailing slashes
   trailingSlash: false,
   
-  // Add headers for performance
-  headers: async () => {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=3600, must-revalidate',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-        ],
-      },
-      {
-        // Add preconnect headers for Firebase services
-        source: '/',
-        headers: [
-          {
-            key: 'Link',
-            value: '<https://firestore.googleapis.com>; rel=preconnect; crossorigin, <https://identitytoolkit.googleapis.com>; rel=preconnect; crossorigin',
-          },
-        ],
-      },
-    ];
-  },
+  // We're not using headers in next.config.js because they don't work with static export
+  // Instead, we configure these in vercel.json or netlify.toml
 };
 
 module.exports = nextConfig; 

@@ -28,16 +28,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Skip Firebase auth subscription if it's not available (during SSR/build)
     if (!isFirebaseAvailable) {
       setLoading(false);
+      console.log('Firebase not available, skipping auth subscription');
       return () => {};
     }
 
     try {
+      console.log('Setting up Firebase auth state listener');
       const unsubscribe = onAuthChange((authUser) => {
+        console.log('Auth state changed:', authUser ? `User ${authUser.uid} logged in` : 'No user');
         setUser(authUser);
         setLoading(false);
       });
 
-      return () => unsubscribe();
+      return () => {
+        console.log('Cleaning up Firebase auth state listener');
+        unsubscribe();
+      };
     } catch (err) {
       console.error('Failed to subscribe to auth changes:', err);
       setLoading(false);
@@ -47,20 +53,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<boolean> => {
     if (!isFirebaseAvailable) {
+      console.error('Login attempted but Firebase is not available');
       setError('Firebase is not available. Check your configuration.');
       return false;
     }
 
     try {
+      console.log('Attempting login for:', email);
       setLoading(true);
       setError(null);
       const result = await signIn(email, password);
       
       if (!result.success) {
+        console.error('Login failed:', result.error);
         setError(result.error || 'Failed to sign in');
         return false;
       }
       
+      console.log('Login successful for:', email);
       return true;
     } catch (err: any) {
       console.error('Login error:', err);
@@ -73,20 +83,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (email: string, password: string, name: string): Promise<boolean> => {
     if (!isFirebaseAvailable) {
+      console.error('Registration attempted but Firebase is not available');
       setError('Firebase is not available. Check your configuration.');
       return false;
     }
 
     try {
+      console.log('Attempting registration for:', email);
       setLoading(true);
       setError(null);
       const result = await signUp(email, password, name);
       
       if (!result.success) {
+        console.error('Registration failed:', result.error);
         setError(result.error || 'Failed to register');
         return false;
       }
       
+      console.log('Registration successful for:', email);
       return true;
     } catch (err: any) {
       console.error('Registration error:', err);
