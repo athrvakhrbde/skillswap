@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Profile, createProfile } from '@/lib/dualite';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaUser, FaGraduationCap, FaBrain, FaMapMarkerAlt, FaEnvelope, FaSpinner, FaInfoCircle, FaChalkboardTeacher } from 'react-icons/fa';
+import { FirebaseProfile, createOrUpdateProfile, getProfileByUserId } from '@/lib/firebase';
+import { useAuth } from '@/lib/auth-context';
 
 export default function ProfileForm() {
   const router = useRouter();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<Omit<Profile, 'id'>>({
+  const [formData, setFormData] = useState<Omit<FirebaseProfile, 'userId' | 'createdAt' | 'updatedAt'>>({
     name: '',
     teach: '',
     learn: '',
@@ -21,6 +23,43 @@ export default function ProfileForm() {
     teach: false,
     learn: false,
   });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // If user is not logged in, redirect to login page
+    if (!user && !isLoading) {
+      router.push('/login');
+      return;
+    }
+
+    // Load existing profile data if available
+    const loadProfile = async () => {
+      if (user) {
+        try {
+          const profile = await getProfileByUserId(user.uid);
+          if (profile) {
+            setFormData({
+              name: profile.name || '',
+              teach: profile.teach || '',
+              learn: profile.learn || '',
+              location: profile.location || '',
+              contact: profile.contact || '',
+              about: profile.about || '',
+              teachingExperience: profile.teachingExperience || ''
+            });
+          }
+        } catch (error) {
+          console.error('Error loading profile:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [user, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -34,6 +73,11 @@ export default function ProfileForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      router.push('/login');
+      return;
+    }
     
     // Validate required fields
     const newErrors = {
@@ -52,13 +96,14 @@ export default function ProfileForm() {
       setIsSubmitting(true);
       
       // Create profile with defaults if needed
-      const profileToCreate: Profile = {
+      const profileToCreate = {
+        userId: user.uid,
         ...formData,
-        name: formData.name.trim() || 'User',
-        contact: formData.contact.trim() || 'user@example.com',
+        name: formData.name.trim() || user.displayName || 'User',
+        contact: formData.contact.trim() || user.email || 'user@example.com'
       };
       
-      await createProfile(profileToCreate);
+      await createOrUpdateProfile(profileToCreate);
       
       // Navigate to browse page
       router.push('/browse');
@@ -68,6 +113,14 @@ export default function ProfileForm() {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <FaSpinner className="animate-spin text-indigo-400 text-2xl" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -183,7 +236,7 @@ export default function ProfileForm() {
             onChange={handleChange}
             className="w-full px-4 py-3 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/30 text-white placeholder-gray-400"
           />
-          <p className="text-gray-500 text-sm mt-1">Defaults to user@example.com if left empty</p>
+          <p className="text-gray-500 text-sm mt-1">Your email will be used as contact information</p>
         </div>
         
         <button
@@ -194,9 +247,9 @@ export default function ProfileForm() {
           {isSubmitting ? (
             <span className="flex items-center justify-center">
               <FaSpinner className="animate-spin mr-2" />
-              Creating Profile...
+              Saving Profile...
             </span>
-          ) : 'Create Profile'}
+          ) : 'Save Profile'}
         </button>
       </form>
     </div>

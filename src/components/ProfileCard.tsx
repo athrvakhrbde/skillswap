@@ -2,7 +2,15 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Profile } from '@/lib/dualite';
-import { FaArrowRight, FaGraduationCap, FaBrain, FaMapMarkerAlt, FaChevronDown, FaChevronUp, FaComments, FaPaperPlane, FaUser, FaExclamationCircle, FaEnvelope, FaLock } from 'react-icons/fa';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
+import { 
+  getOrCreateConversation, 
+  sendMessage, 
+  listenToMessages, 
+  ChatMessage as FirebaseChatMessage 
+} from '@/lib/firebase';
+import { FaArrowRight, FaGraduationCap, FaBrain, FaMapMarkerAlt, FaChevronDown, FaChevronUp, FaComments, FaPaperPlane, FaUser, FaExclamationCircle, FaEnvelope, FaLock, FaSpinner } from 'react-icons/fa';
 
 interface Message {
   id: string;
@@ -17,12 +25,16 @@ interface ProfileCardProps {
 }
 
 export default function ProfileCard({ profile }: ProfileCardProps) {
+  const router = useRouter();
+  const { user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
+  const [firebaseMessages, setFirebaseMessages] = useState<FirebaseChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
@@ -32,7 +44,7 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
     if (chatEndRef.current && isChatOpen) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [chatMessages, isChatOpen]);
+  }, [chatMessages, isChatOpen, firebaseMessages]);
 
   // Focus on input when chat opens
   useEffect(() => {
@@ -41,6 +53,23 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
     }
   }, [isChatOpen]);
 
+  // Set up Firebase chat listener when conversation is opened
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    
+    if (isChatOpen && user && conversationId) {
+      unsubscribe = listenToMessages(conversationId, (messages) => {
+        setFirebaseMessages(messages);
+      });
+    }
+    
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [isChatOpen, user, conversationId]);
+
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
     if (!isExpanded) {
@@ -48,74 +77,56 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
     }
   };
 
-  const toggleChat = (e: React.MouseEvent) => {
+  const toggleChat = async (e: React.MouseEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      router.push('/login?redirect=/browse');
+      return;
+    }
+    
+    if (!isChatOpen && !conversationId && profile.id) {
+      try {
+        // Get or create a conversation with this profile's user
+        const convId = await getOrCreateConversation(user.uid, profile.id);
+        setConversationId(convId);
+      } catch (error) {
+        console.error('Error creating conversation:', error);
+        setChatError('Failed to start conversation. Please try again.');
+        return;
+      }
+    }
+    
     setIsChatOpen(!isChatOpen);
     setChatError(null);
   };
 
-  const sendMessage = async (e: React.FormEvent) => {
+  const sendMessageToUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || isSending) return;
+    if (!message.trim() || isSending || !user || !profile.id || !conversationId) return;
     
-    const newMessageId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const newMessage: Message = {
-      id: newMessageId,
-      text: message.trim(),
-      sender: 'user',
-      timestamp: Date.now(),
-      status: 'sending'
-    };
-    
-    setChatMessages(prev => [...prev, newMessage]);
-    setMessage('');
     setIsSending(true);
-    setChatError(null);
     
     try {
-      // In a production app, this would be an API call to your chat service
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-      
-      // Update the message status to sent
-      setChatMessages(prev => 
-        prev.map(msg => 
-          msg.id === newMessageId ? { ...msg, status: 'sent' } : msg
-        )
-      );
-      
-      // Simulate a response from the peer after a short delay
-      const peerIsTyping = setTimeout(() => {
-        // In production, this would be a real-time message from a chat system
-        const responseMessage: Message = {
-          id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          text: `Hi there! I'm interested in swapping skills. I can teach ${profile.teach} and would love to learn more about ${profile.learn}.`,
-          sender: 'peer',
-          timestamp: Date.now(),
-          status: 'sent'
-        };
-        
-        setChatMessages(prev => [...prev, responseMessage]);
-      }, 1500);
-      
-      return () => clearTimeout(peerIsTyping);
+      await sendMessage(conversationId, user.uid, profile.id, message.trim());
+      setMessage('');
+      setChatError(null);
     } catch (error) {
       console.error('Error sending message:', error);
       setChatError('Failed to send message. Please try again.');
-      
-      // Update the message status to error
-      setChatMessages(prev => 
-        prev.map(msg => 
-          msg.id === newMessageId ? { ...msg, status: 'error' } : msg
-        )
-      );
     } finally {
       setIsSending(false);
     }
   };
 
   // Format time from timestamp
-  const formatMessageTime = (timestamp: number): string => {
-    const date = new Date(timestamp);
+  const formatMessageTime = (timestamp: any): string => {
+    if (!timestamp) return '';
+    
+    const date = typeof timestamp === 'number' 
+      ? new Date(timestamp)
+      : new Date(timestamp.toDate());
+      
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
@@ -123,6 +134,13 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
   const handleContact = () => {
     if (profile.contact) {
       window.location.href = `mailto:${profile.contact}?subject=SkillSwap: Interested in learning ${profile.teach}&body=Hi ${profile.name || 'there'},\n\nI saw your profile on SkillSwap and I'm interested in learning ${profile.teach}. Would you be available to connect?\n\nBest regards,`;
+    }
+  };
+
+  // Navigate to full conversation view
+  const navigateToConversation = () => {
+    if (conversationId && user) {
+      router.push(`/messages/${conversationId}`);
     }
   };
 
@@ -203,35 +221,44 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
                 <FaUser className="mr-2 text-indigo-400" size={12} />
                 {profile.name || 'User'}
               </h4>
-              <div className="text-xs text-gray-400">
-                <FaLock className="inline mr-1" size={10} /> End-to-end encrypted
+              <div className="flex items-center">
+                <div className="text-xs text-gray-400 mr-2">
+                  <FaLock className="inline mr-1" size={10} /> Encrypted
+                </div>
+                <button 
+                  onClick={navigateToConversation}
+                  className="text-xs bg-indigo-600/30 hover:bg-indigo-600/50 px-2 py-1 rounded text-indigo-300 transition-colors"
+                >
+                  Expand
+                </button>
               </div>
             </div>
             
             <div className="h-60 overflow-y-auto p-3 space-y-3 bg-[rgba(15,15,35,0.4)]">
-              {chatMessages.length === 0 ? (
+              {firebaseMessages.length === 0 ? (
                 <p className="text-center text-gray-400 text-sm py-6">Start a conversation</p>
               ) : (
                 <>
-                  {chatMessages.map((msg) => (
+                  {firebaseMessages.map((msg) => (
                     <div 
                       key={msg.id} 
-                      className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${msg.senderId === user?.uid ? 'justify-end' : 'justify-start'}`}
                     >
                       <div 
                         className={`max-w-[80%] rounded-lg px-3 py-2 ${
-                          msg.sender === 'user' 
+                          msg.senderId === user?.uid 
                             ? 'bg-indigo-600/40 text-white' 
                             : 'bg-[rgba(255,255,255,0.1)] text-gray-200'
                         }`}
                       >
                         <div className="mb-1">{msg.text}</div>
                         <div className="flex justify-end items-center text-xs text-gray-400">
-                          {formatMessageTime(msg.timestamp)}
-                          {msg.sender === 'user' && (
+                          {msg.timestamp && formatMessageTime(msg.timestamp)}
+                          {msg.senderId === user?.uid && (
                             <span className="ml-1">
                               {msg.status === 'sending' && '•'}
                               {msg.status === 'sent' && '✓'}
+                              {msg.status === 'read' && '✓✓'}
                               {msg.status === 'error' && <FaExclamationCircle className="text-red-400 ml-1" size={10} />}
                             </span>
                           )}
@@ -251,46 +278,55 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
               </div>
             )}
             
-            <form onSubmit={sendMessage} className="flex items-center p-3 bg-[rgba(20,20,40,0.5)]">
+            <form onSubmit={sendMessageToUser} className="px-3 py-2 flex items-center gap-2 bg-[rgba(20,20,40,0.3)]">
               <input
-                ref={messageInputRef}
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type your message..."
+                placeholder="Type a message..."
+                className="flex-grow text-sm bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/30 text-white placeholder-gray-400"
+                ref={messageInputRef}
                 disabled={isSending}
-                className="flex-grow bg-[rgba(255,255,255,0.05)] border border-indigo-500/20 rounded-lg py-2 px-3 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 disabled:opacity-70"
               />
               <button 
-                type="submit" 
-                disabled={isSending || !message.trim()}
-                className={`ml-2 bg-indigo-600/30 hover:bg-indigo-600/50 text-white rounded-lg p-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSending ? 'opacity-50' : ''}`}
+                type="submit"
+                disabled={!message.trim() || isSending}
+                className={`p-2 rounded ${
+                  !message.trim() || isSending
+                    ? 'bg-indigo-600/20 text-indigo-300/50'
+                    : 'bg-indigo-600/40 text-indigo-300 hover:bg-indigo-600/60'
+                } transition-colors`}
               >
-                <FaPaperPlane />
+                {isSending ? <FaSpinner className="animate-spin" size={14} /> : <FaPaperPlane size={14} />}
               </button>
             </form>
           </div>
         )}
         
-        <div className="flex gap-2">
-          <button
+        <div className="flex items-center justify-between pt-2 border-t border-indigo-500/10">
+          <button 
             onClick={toggleExpand}
-            className="flex-1 cursor-button-secondary flex items-center justify-center"
+            className="text-gray-400 hover:text-white text-sm flex items-center transition-colors"
           >
             {isExpanded ? (
-              <>Less Details <FaChevronUp className="ml-2" size={14} /></>
+              <>
+                <FaChevronUp className="mr-1" size={12} /> Show Less
+              </>
             ) : (
-              <>More Details <FaChevronDown className="ml-2" size={14} /></>
+              <>
+                <FaChevronDown className="mr-1" size={12} /> Show More
+              </>
             )}
           </button>
           
-          <button
-            onClick={toggleChat}
-            className={`flex-1 ${isChatOpen ? 'cursor-button' : 'cursor-button-secondary'} flex items-center justify-center`}
-          >
-            <FaComments className="mr-2" size={14} /> 
-            {isChatOpen ? 'Close Chat' : 'Chat'}
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={toggleChat}
+              className="text-indigo-400 hover:text-indigo-300 transition-colors flex items-center text-sm px-3 py-1.5 rounded-lg border border-indigo-500/20 hover:bg-indigo-600/10"
+            >
+              <FaComments className="mr-2" size={14} /> Message
+            </button>
+          </div>
         </div>
       </div>
     </div>

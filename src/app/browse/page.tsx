@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import SearchBar from '@/components/SearchBar';
 import ProfileCard from '@/components/ProfileCard';
-import { useProfiles, Profile } from '@/lib/dualite';
+import { getAllProfiles } from '@/lib/firebase';
 import { FaSpinner, FaSearch, FaPlus, FaFilter, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
+import { Profile } from '@/lib/dualite';
+import { useAuth } from '@/lib/auth-context';
 
 // Filter types
 type FilterType = 'all' | 'teaching' | 'learning' | 'location';
@@ -14,13 +16,47 @@ export default function BrowsePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [filteredProfiles, setFilteredProfiles] = useState<Profile[]>([]);
-  const { profiles, loading, error } = useProfiles(searchTerm);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  // Apply filters to profiles
+  // Fetch profiles
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      try {
+        setLoading(true);
+        const fetchedProfiles = await getAllProfiles();
+        setProfiles(fetchedProfiles);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching profiles:', err);
+        setError('Failed to load profiles. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfiles();
+  }, []);
+
+  // Filter profiles based on search term
   useEffect(() => {
     if (!profiles) return;
     
     let filtered = [...profiles];
+    
+    // Apply search filter if search term exists
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(profile => 
+        profile.name?.toLowerCase().includes(term) ||
+        profile.teach?.toLowerCase().includes(term) ||
+        profile.learn?.toLowerCase().includes(term) ||
+        profile.location?.toLowerCase().includes(term) ||
+        profile.about?.toLowerCase().includes(term)
+      );
+    }
     
     // Apply category filters
     if (activeFilter === 'teaching') {
@@ -40,7 +76,7 @@ export default function BrowsePage() {
     });
     
     setFilteredProfiles(filtered);
-  }, [profiles, activeFilter]);
+  }, [profiles, searchTerm, activeFilter]);
 
   const handleFilterChange = (filter: FilterType) => {
     setActiveFilter(filter);
