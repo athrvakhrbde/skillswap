@@ -1,11 +1,6 @@
 [build]
   command = "npm run build"
-  publish = ".next"
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF . ':(exclude)package-lock.json'"
-
-[build.environment]
-  NETLIFY_NEXT_PLUGIN_SKIP = "true"
-  NODE_VERSION = "18"
+  publish = "out"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
@@ -16,14 +11,4 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
-    Cache-Control = "public, max-age=3600"
-    
-[functions]
-  node_bundler = "esbuild"
-
-# Handle client-side routing
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false 
+    Cache-Control = "public, max-age=3600" 

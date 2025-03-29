@@ -1,3 +1,2 @@
-# Netlify redirects
-# Handle Next.js routing
-/*  /index.html  200! 
+# Netlify redirects for Next.js Static Export
+/*  /index.html  200 
