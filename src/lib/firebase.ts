@@ -1,5 +1,5 @@
 // Firebase configuration
-import { initializeApp, getApps } from 'firebase/app';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -7,7 +7,8 @@ import {
   signOut, 
   onAuthStateChanged,
   updateProfile,
-  User
+  User,
+  Auth
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -23,11 +24,17 @@ import {
   serverTimestamp,
   Timestamp,
   onSnapshot,
-  addDoc
+  addDoc,
+  Firestore
 } from 'firebase/firestore';
 import { Profile } from './dualite';
 
-// Firebase configuration - replace with your own config from Firebase console
+// Check if we have the required Firebase configuration
+const hasValidConfig = 
+  typeof process.env.NEXT_PUBLIC_FIREBASE_API_KEY === 'string' && 
+  process.env.NEXT_PUBLIC_FIREBASE_API_KEY.length > 0;
+
+// Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -38,10 +45,22 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase - only if no apps exist (prevents re-initialization)
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
-const db = getFirestore(app);
-const auth = getAuth(app);
+// Initialize Firebase conditionally
+let app: FirebaseApp | undefined;
+let db: Firestore | undefined;
+let auth: Auth | undefined;
+
+// Only initialize Firebase if we're in the browser and have valid config
+const isBrowser = typeof window !== 'undefined';
+if (isBrowser && hasValidConfig) {
+  try {
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+    db = getFirestore(app);
+    auth = getAuth(app);
+  } catch (error) {
+    console.error('Failed to initialize Firebase:', error);
+  }
+}
 
 // User Interface
 export interface FirebaseUser extends User {
@@ -73,9 +92,19 @@ export interface ChatConversation {
   updatedAt: Timestamp | null;
 }
 
+// Helper to check if Firebase is initialized
+const isFirebaseInitialized = () => {
+  return !!app && !!db && !!auth;
+};
+
 // ============== AUTH FUNCTIONS ==============
 // Sign up
 export const signUp = async (email: string, password: string, name: string): Promise<FirebaseUser | null> => {
+  if (!isFirebaseInitialized() || !auth) {
+    console.warn('Firebase not initialized or running in SSR context');
+    return null;
+  }
+
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     // Update the user's profile with their name
@@ -92,6 +121,11 @@ export const signUp = async (email: string, password: string, name: string): Pro
 
 // Sign in
 export const signIn = async (email: string, password: string): Promise<FirebaseUser | null> => {
+  if (!isFirebaseInitialized() || !auth) {
+    console.warn('Firebase not initialized or running in SSR context');
+    return null;
+  }
+
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user as FirebaseUser;
@@ -103,6 +137,11 @@ export const signIn = async (email: string, password: string): Promise<FirebaseU
 
 // Sign out
 export const signOutUser = async (): Promise<void> => {
+  if (!isFirebaseInitialized() || !auth) {
+    console.warn('Firebase not initialized or running in SSR context');
+    return;
+  }
+
   try {
     await signOut(auth);
   } catch (error) {
@@ -113,6 +152,12 @@ export const signOutUser = async (): Promise<void> => {
 
 // Auth state change listener
 export const onAuthChange = (callback: (user: FirebaseUser | null) => void): (() => void) => {
+  if (!isFirebaseInitialized() || !auth) {
+    console.warn('Firebase not initialized or running in SSR context');
+    // Return a no-op function
+    return () => {};
+  }
+
   return onAuthStateChanged(auth, (user) => {
     callback(user as FirebaseUser | null);
   });
@@ -120,12 +165,18 @@ export const onAuthChange = (callback: (user: FirebaseUser | null) => void): (()
 
 // Get current user
 export const getCurrentUser = (): FirebaseUser | null => {
+  if (!isFirebaseInitialized() || !auth) return null;
   return auth.currentUser as FirebaseUser | null;
 };
 
 // ============== PROFILE FUNCTIONS ==============
 // Create or update a profile
-export const createOrUpdateProfile = async (profile: Omit<FirebaseProfile, 'createdAt' | 'updatedAt'>): Promise<string> => {
+export const createOrUpdateProfile = async (profile: Omit<FirebaseProfile, 'createdAt' | 'updatedAt'>): Promise<string | null> => {
+  if (!isFirebaseInitialized() || !db) {
+    console.warn('Firebase not initialized or running in SSR context');
+    return null;
+  }
+
   try {
     const { userId, ...profileData } = profile;
     const userRef = doc(db, 'profiles', userId);
@@ -157,6 +208,11 @@ export const createOrUpdateProfile = async (profile: Omit<FirebaseProfile, 'crea
 
 // Get a profile by user ID
 export const getProfileByUserId = async (userId: string): Promise<FirebaseProfile | null> => {
+  if (!isFirebaseInitialized() || !db) {
+    console.warn('Firebase not initialized or running in SSR context');
+    return null;
+  }
+
   try {
     const profileDoc = await getDoc(doc(db, 'profiles', userId));
     
@@ -176,6 +232,11 @@ export const getProfileByUserId = async (userId: string): Promise<FirebaseProfil
 
 // Get all profiles
 export const getAllProfiles = async (): Promise<Profile[]> => {
+  if (!isFirebaseInitialized() || !db) {
+    console.warn('Firebase not initialized or running in SSR context');
+    return [];
+  }
+
   try {
     const profilesSnapshot = await getDocs(collection(db, 'profiles'));
     
@@ -193,6 +254,11 @@ export const getAllProfiles = async (): Promise<Profile[]> => {
 // ============== CHAT FUNCTIONS ==============
 // Get or create a conversation between two users
 export const getOrCreateConversation = async (userId1: string, userId2: string): Promise<string> => {
+  if (!isFirebaseInitialized() || !db) {
+    console.warn('Firebase not initialized or running in SSR context');
+    throw new Error('Firebase not initialized');
+  }
+
   try {
     // Sort IDs to ensure consistent conversation doc IDs
     const participants = [userId1, userId2].sort();
@@ -232,6 +298,11 @@ export const sendMessage = async (
   recipientId: string, 
   text: string
 ): Promise<string> => {
+  if (!isFirebaseInitialized() || !db) {
+    console.warn('Firebase not initialized or running in SSR context');
+    throw new Error('Firebase not initialized');
+  }
+
   try {
     const messagesRef = collection(db, 'conversations', conversationId, 'messages');
     
@@ -265,6 +336,11 @@ export const listenToMessages = (
   conversationId: string, 
   callback: (messages: ChatMessage[]) => void
 ): (() => void) => {
+  if (!isFirebaseInitialized() || !db) {
+    console.warn('Firebase not initialized or running in SSR context');
+    return () => {};
+  }
+
   const messagesRef = collection(db, 'conversations', conversationId, 'messages');
   const q = query(messagesRef, orderBy('timestamp', 'asc'));
   
@@ -285,6 +361,11 @@ export const getUserConversations = (
   userId: string, 
   callback: (conversations: ChatConversation[]) => void
 ): (() => void) => {
+  if (!isFirebaseInitialized() || !db) {
+    console.warn('Firebase not initialized or running in SSR context');
+    return () => {};
+  }
+
   const conversationsRef = collection(db, 'conversations');
   const q = query(
     conversationsRef,

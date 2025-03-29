@@ -11,6 +11,7 @@ type AuthContextType = {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  isFirebaseAvailable: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,17 +20,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isFirebaseAvailable, setIsFirebaseAvailable] = useState<boolean>(
+    typeof window !== 'undefined' && !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY
+  );
 
   useEffect(() => {
-    const unsubscribe = onAuthChange((authUser) => {
-      setUser(authUser);
+    // Skip Firebase auth subscription if it's not available (during SSR/build)
+    if (!isFirebaseAvailable) {
       setLoading(false);
-    });
+      return () => {};
+    }
 
-    return () => unsubscribe();
-  }, []);
+    try {
+      const unsubscribe = onAuthChange((authUser) => {
+        setUser(authUser);
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
+    } catch (err) {
+      console.error('Failed to subscribe to auth changes:', err);
+      setLoading(false);
+      return () => {};
+    }
+  }, [isFirebaseAvailable]);
 
   const login = async (email: string, password: string) => {
+    if (!isFirebaseAvailable) {
+      setError('Firebase is not available. Check your configuration.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -44,6 +65,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (email: string, password: string, name: string) => {
+    if (!isFirebaseAvailable) {
+      setError('Firebase is not available. Check your configuration.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -58,6 +84,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    if (!isFirebaseAvailable) {
+      setError('Firebase is not available. Check your configuration.');
+      return;
+    }
+
     try {
       setLoading(true);
       await signOutUser();
@@ -83,6 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         logout,
         clearError,
+        isFirebaseAvailable,
       }}
     >
       {children}
