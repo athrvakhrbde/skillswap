@@ -39,12 +39,12 @@ export default function Home() {
       <div className="features-section">
         <h2 className="features-title">How it works</h2>
         
-        <div className="features-grid">
-          <div className="cursor-card feature-card">
+        <div className="features-grid max-w-5xl mx-auto px-4">
+          <div className="cursor-card relative overflow-hidden">
+            <div className="feature-number">1</div>
             <div className="cursor-card-content">
-              <div className="feature-number">1</div>
-              <div className="card-header mb-4">
-                <h3>Share Your Expertise</h3>
+              <div className="mb-4">
+                <h3 className="text-xl font-semibold text-white">Share Your Expertise</h3>
               </div>
               <p className="text-gray-300">
                 Teach others what you're passionate about. Everyone has valuable skills to share!
@@ -52,11 +52,11 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="cursor-card feature-card">
+          <div className="cursor-card relative overflow-hidden">
+            <div className="feature-number">2</div>
             <div className="cursor-card-content">
-              <div className="feature-number">2</div>
-              <div className="card-header mb-4">
-                <h3>Learn Something New</h3>
+              <div className="mb-4">
+                <h3 className="text-xl font-semibold text-white">Learn Something New</h3>
               </div>
               <p className="text-gray-300">
                 Discover new skills from people in your community. Feed your curiosity!
@@ -64,11 +64,11 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="cursor-card feature-card">
+          <div className="cursor-card relative overflow-hidden">
+            <div className="feature-number">3</div>
             <div className="cursor-card-content">
-              <div className="feature-number">3</div>
-              <div className="card-header mb-4">
-                <h3>Connect Locally</h3>
+              <div className="mb-4">
+                <h3 className="text-xl font-semibold text-white">Connect Locally</h3>
               </div>
               <p className="text-gray-300">
                 Meet like-minded people in your area. Build meaningful connections!

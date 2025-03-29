@@ -11,6 +11,8 @@ export interface Profile {
   learn: string;
   location: string;
   contact: string;
+  about?: string;
+  teachingExperience?: string;
 }
 
 // Mock database for local development
@@ -24,7 +26,9 @@ const SAMPLE_PROFILES: Profile[] = [
     teach: 'Guitar',
     learn: 'Coding',
     location: 'Downtown',
-    contact: 'alex@example.com'
+    contact: 'alex@example.com',
+    about: 'Music enthusiast with 8 years of guitar playing experience. I love teaching beginners and helping them discover the joy of music.',
+    teachingExperience: 'I\'ve taught guitar to over 20 students, ranging from complete beginners to intermediate players. My specialty is acoustic fingerstyle and basic music theory.'
   },
   {
     id: '2',
@@ -32,7 +36,9 @@ const SAMPLE_PROFILES: Profile[] = [
     teach: 'Yoga',
     learn: 'Photography',
     location: 'Uptown',
-    contact: 'sara@example.com'
+    contact: 'sara@example.com',
+    about: 'Certified yoga instructor passionate about mindfulness and wellness. I believe yoga is for everybody regardless of age or fitness level.',
+    teachingExperience: 'I\'ve been teaching yoga for 5 years, with certifications in Hatha and Vinyasa. I specialize in beginner-friendly flows and alignment techniques.'
   },
   {
     id: '3',
@@ -40,7 +46,9 @@ const SAMPLE_PROFILES: Profile[] = [
     teach: 'Baking',
     learn: 'Spanish',
     location: 'Midtown',
-    contact: 'mike@example.com'
+    contact: 'mike@example.com',
+    about: 'Self-taught baker who loves creating delicious treats. From sourdough to pastries, I enjoy the science and art of baking.',
+    teachingExperience: 'I\'ve hosted multiple baking workshops focusing on bread basics and pastry techniques. I can teach you to make incredible sourdough from scratch!'
   },
   {
     id: '4',
@@ -48,7 +56,9 @@ const SAMPLE_PROFILES: Profile[] = [
     teach: 'Spanish',
     learn: 'Guitar',
     location: 'West End',
-    contact: 'priya@example.com'
+    contact: 'priya@example.com',
+    about: 'Bilingual speaker who lived in Madrid for 3 years. I love sharing Spanish language and culture through conversation practice.',
+    teachingExperience: 'I\'ve tutored Spanish for both casual learners and university students. My teaching style focuses on practical conversation skills and everyday vocabulary.'
   },
   {
     id: '5',
@@ -56,7 +66,9 @@ const SAMPLE_PROFILES: Profile[] = [
     teach: 'Coding',
     learn: 'Juggling',
     location: 'East Side',
-    contact: 'jordan@example.com'
+    contact: 'jordan@example.com',
+    about: 'Software developer with a passion for teaching others. I believe anyone can learn to code with the right guidance.',
+    teachingExperience: 'I\'ve mentored junior developers and taught coding workshops. I specialize in JavaScript, React, and web development fundamentals.'
   }
 ];
 

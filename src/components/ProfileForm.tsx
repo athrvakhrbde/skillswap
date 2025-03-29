@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Profile, createProfile } from '@/lib/dualite';
 import { useRouter } from 'next/navigation';
-import { FaUser, FaGraduationCap, FaBrain, FaMapMarkerAlt, FaEnvelope, FaSpinner } from 'react-icons/fa';
+import { FaUser, FaGraduationCap, FaBrain, FaMapMarkerAlt, FaEnvelope, FaSpinner, FaInfoCircle, FaChalkboardTeacher } from 'react-icons/fa';
 
 export default function ProfileForm() {
   const router = useRouter();
@@ -13,14 +13,16 @@ export default function ProfileForm() {
     teach: '',
     learn: '',
     location: '',
-    contact: ''
+    contact: '',
+    about: '',
+    teachingExperience: ''
   });
   const [errors, setErrors] = useState({
     teach: false,
     learn: false,
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
@@ -121,6 +123,36 @@ export default function ProfileForm() {
           {errors.learn && (
             <p className="text-red-400 text-sm mt-1">Please enter a skill you want to learn</p>
           )}
+        </div>
+        
+        <div className="mb-5">
+          <label htmlFor="about" className="block text-gray-300 mb-2 font-medium flex items-center">
+            <FaInfoCircle className="mr-2 text-indigo-400" size={14} /> About me (optional)
+          </label>
+          <textarea
+            id="about"
+            name="about"
+            placeholder="Tell others about yourself, your interests, and what motivates you to teach and learn"
+            value={formData.about}
+            onChange={handleChange}
+            rows={4}
+            className="w-full px-4 py-3 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/30 text-white placeholder-gray-400"
+          />
+        </div>
+        
+        <div className="mb-5">
+          <label htmlFor="teachingExperience" className="block text-gray-300 mb-2 font-medium flex items-center">
+            <FaChalkboardTeacher className="mr-2 text-indigo-400" size={14} /> Teaching experience (optional)
+          </label>
+          <textarea
+            id="teachingExperience"
+            name="teachingExperience"
+            placeholder="Describe your experience teaching this skill or any relevant qualifications"
+            value={formData.teachingExperience}
+            onChange={handleChange}
+            rows={3}
+            className="w-full px-4 py-3 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/30 text-white placeholder-gray-400"
+          />
         </div>
         
         <div className="mb-5">
